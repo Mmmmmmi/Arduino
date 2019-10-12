@@ -308,7 +308,3 @@ void loop() {
 
   //delay(1000);        // delay in between reads for stability
 }
-
-
-
-
