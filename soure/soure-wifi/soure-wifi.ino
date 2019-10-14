@@ -17,21 +17,21 @@ unsigned long getTime0() {
   //返回   从按下的时间开始-------到松手的时间
   sta_cache = sta;
   sta = digitalRead(PIN);
-  //   Serial.print("sta = ");
-  // Serial.print(sta);
-  //     Serial.print("sta_cache = ");
-  // Serial.print(sta_cache);
-  //   Serial.println();
+  //Serial.print("sta = ");
+  //Serial.print(sta);
+  //Serial.print("sta_cache = ");
+  //Serial.print(sta_cache);
+  //Serial.println();
   delayMicroseconds(200);
   if (sta == HIGH && sta_cache == LOW) {
     time_cache0 = time0;
     time0 = millis();
-    //     Serial.print("本次有效");
+    //Serial.print("本次有效");
     return (time0 - time_cache0);
   }
   else {
-    //     Serial.print("本次无效");
-    //   Serial.println();
+    //Serial.print("本次无效");
+    //Serial.println();
     return 0;
   }
 }
@@ -47,7 +47,7 @@ unsigned long getTime1(unsigned long _t) {
   if (time1_cache) {  //有数据时才执行滤波
     if (time1_cache < time1_MAX) {   //滤最小阈值
       if (time1_cache < time1_MIN) { //若有过快的波，开启标志位
-        //       Serial.println("make");
+        //Serial.println("make");
         time1_sta_error = true;
       }
       return 0;
@@ -169,11 +169,8 @@ SoftwareSerial mySerial(2, 3); /* RX:D2, TX:D3 */
 #define UARTSPEED  19200
 #endif
 
-//#define SSID_NAME   "刮开密码▇▇▇▇▇▇"
-//#define PASSWORD    "WASD315.??"
-
-#define SSID_NAME   "Mmmmmmi"
-#define PASSWORD    "PPNN13%dkstfeb.1st"
+#define SSID_NAME   "SSID"
+#define PASSWORD    "PASSWORD"
 
 #define HOST_NAME   "www.baidu.com"
 #define HOST_PORT   (80)
