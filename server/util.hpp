@@ -103,6 +103,7 @@ public:
 
     static bool Write(const std::string& file_path, const std::string& content)
     {
+        std::cout << file_path << std::endl;
         std::ofstream file(file_path.c_str());
         if (!file.is_open()) {
             return false;

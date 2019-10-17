@@ -1,4 +1,3 @@
-
 ////////////////////
 //Serial START
 
@@ -125,11 +124,11 @@ void getSensorData()
 
   ///////////////////
   //温度
-  //时间控制 5秒测一次   
+  //时间控制 10秒左右测一次   
   static int timeflag = 0;
   static int nowtime = 0;
   timeflag = millis() - nowtime;  
-  if (timeflag > 5000 && timeflag < 6000) {
+  if (timeflag >= 10000) {
     nowtime = millis();
     temperature = sensor.temp();
     Serial.print("Current temp: ");
@@ -169,10 +168,15 @@ SoftwareSerial mySerial(2, 3); /* RX:D2, TX:D3 */
 #define UARTSPEED  19200
 #endif
 
-#define SSID        "刮开密码▇▇▇▇▇▇"
+#define SSID_NAME   "刮开密码▇▇▇▇▇▇"
 #define PASSWORD    "WASD315.??"
-#define HOST_NAME   "www.baidu.com"
-#define HOST_PORT   (80)
+
+
+//#define HOST_NAME   "119.23.248.167"
+//#define HOST_PORT   (9527)
+
+#define HOST_NAME   "192.168.1.100"
+#define HOST_PORT   (9527)
 
 
 ESP8266 wifi(&EspSerial);
@@ -187,22 +191,19 @@ void wifiInit()
   } else {
     Serial.print("to station + softap err\r\n");
   }
-  if (!connectflag)
-  {
-    if (wifi.joinAP(SSID, PASSWORD)) {
+  if (wifi.joinAP(SSID_NAME, PASSWORD)) {
     Serial.print("Join AP success\r\n");
     Serial.print("IP:");
     Serial.println( wifi.getLocalIP().c_str());
     connectflag = true;
-    } else {
+  }
+  else {
     Serial.print("Join AP failure\r\n");
-    }
-
-    if (wifi.disableMUX()) {
+  }
+  if (wifi.disableMUX()) {
       Serial.print("single ok\r\n");
-    } else {
-      Serial.print("single err\r\n");
-    }
+  } else {
+    Serial.print("single err\r\n");
   }
   Serial.print("setup end\r\n");
 }
@@ -210,64 +211,86 @@ void wifiInit()
 void wifiSendDataToServer()
 {
 
+  Serial.print("wifiSendDataToServer\r\n");
   //如果没有连着wifi 重新连一下
   if (!connectflag)
   {
-    if (wifi.joinAP(SSID, PASSWORD)) {
-    Serial.print("Join AP success\r\n");
-    Serial.print("IP:");
-    Serial.println( wifi.getLocalIP().c_str());
-    connectflag = true;
+    if (wifi.joinAP(SSID_NAME, PASSWORD)) {
+      Serial.print("Join AP success\r\n");
+      Serial.print("IP:");
+      Serial.println( wifi.getLocalIP().c_str());
+      connectflag = true;
     } else {
-    Serial.print("Join AP failure\r\n");
+      Serial.print("Join AP failure\r\n");
+      return;
     }
-
     if (wifi.disableMUX()) {
       Serial.print("single ok\r\n");
     } else {
       Serial.print("single err\r\n");
+      return;
     }
-    drawWifiState(connectflag);
   }
-
-  ///////////////////
-  //每 10 min 发送一次数据
-  static int timeflag = 0;
-  static int nowtime = 0;
-  timeflag = millis() - nowtime;  
-  if (timeflag - 1000 * 60 * 10 > 0) {
-    nowtime = millis();
-    temperature = sensor.temp();
-    Serial.println("wait");
-    return;
-  }
-
-  uint8_t buffer[1024] = {0};
-
+ 
   if (wifi.createTCP(HOST_NAME, HOST_PORT)) {
     Serial.print("create tcp ok\r\n");
   } else {
     Serial.print("create tcp err\r\n");
+    return;
   }
 
-  char *hello = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: close\r\n\r\n";
-  wifi.send((const uint8_t*)hello, strlen(hello));
+  // Trying 119.23.248.167...
+  // TCP_NODELAY set 
+  // Connected to 119.23.248.167 (119.23.248.167) port 9527 (#0)
+  // GET /all_questions HTTP/1.1
+  // Host: 119.23.248.167:9527
+  // User-Agent: curl/7.64.1
+  // Accept: */* 
+  //
+  //temperature
+  //heartrate
+  //char senddata[] = "POST / HTTP/1.1\r\nHost: 119.23.248.167:9527\r\nAccept: */*\r\n\r\n aaa";
+  //char *hello = "GET / HTTP/1.1\r\nHost: 119.23.248.167\r\nConnection: close\r\nAccept: */*\r\n\r\n";
+  String senddata = "POST / HTTP/1.1\r\nHost: 119.23.248.167:9527\r\nAccept: */*\r\n\r\n";
 
-  //uint32_t len = wifi.recv(buffer, sizeof(buffer), 10000);
-  /*
-   if (len > 0) {
-    Serial.print("Received:[");
+
+  //AT+CIPSTAMAC? +CIPSTAMAC:"60:01:94:20:18:57"
+  String macaddr = wifi.getStationMac();
+  int startpos = macaddr.indexOf('"');
+  
+  senddata += "mac:";
+  senddata += macaddr.substring(startpos + 1, startpos + 18);
+  senddata += "\r\n";
+  
+  senddata += "temperature:";
+  senddata += temperature;
+  senddata += "\r\n";
+  
+  senddata += "heartrate:";
+  senddata += heartrate; 
+  senddata += "\r\n";
+  
+  Serial.print("Send:[\r\n");
+  Serial.print(senddata.c_str());
+  Serial.print("]\r\n");
+  wifi.send((const uint8_t*)senddata.c_str(), senddata.length());
+
+
+  uint8_t buffer[1024] = {0};
+  uint32_t len = wifi.recv(buffer, sizeof(buffer), 10000);
+  if (len > 0) {
+    Serial.print("Received:[\r\n");
     for (uint32_t i = 0; i < len; i++) {
       Serial.print((char)buffer[i]);
     }
     Serial.print("]\r\n");
   }
-  */
   
   if (wifi.releaseTCP()) {
     Serial.print("release tcp ok\r\n");
   } else {
     Serial.print("release tcp err\r\n");
+    return;
   }
 }
 
@@ -328,19 +351,6 @@ static const unsigned char wendu[6][60] PROGMEM={
 
 };
 
-void drawWifiState(bool flag)
-{
-    if (flag)
-    {
-      u8g.drawStr(30, 10, "WIFI");
-    }
-    else
-    {
-      u8g.drawStr(30, 10, "NULL");
-    }
-
-}
-
 
 //LED输出
 void draw(void)
@@ -348,7 +358,21 @@ void draw(void)
   //================Microduino====================//
   u8g.setFont(u8g_font_fixed_v0r);
   u8g.drawStr(0, 10, "test");
-  drawWifiState(connectflag);
+  if (connectflag)
+  {
+    u8g.drawStr(30, 10, "WIFI");
+    //u8g.drawStr(0, 55, "IP:");
+    //u8g.setPrintPos(33, 45);//换行显示须再定义
+    //Serial.println(wifi.getLocalIP().c_str());
+    //u8g.drawStr(20, 55, wifi.getLocalIP().c_str());
+  }
+  else
+  {
+    u8g.drawStr(30, 10, "NULL");
+    //u8g.drawStr(0, 55, "IP:");
+    //u8g.setPrintPos(33, 45);//换行显示须再定义
+    //u8g.drawStr(20, 55, "NULL");
+  }
   u8g.drawLine(0, 15, 60, 15);
   u8g.drawLine(0, 0, 128, 0);
   u8g.drawLine(0, 63, 128, 63);
@@ -369,7 +393,7 @@ void draw(void)
 
   u8g.drawStr(0, 45, "SSID:");
   //u8g.setPrintPos(33, 45);//换行显示须再定义
-  u8g.drawStr(33, 45, "Mmmmmmi");
+  u8g.drawStr(33, 45, SSID_NAME);
   
   //================ Graph===================//
 
@@ -383,47 +407,51 @@ void draw(void)
 
 }
 
-
-//LED END
-/////////////////////////////////////////////////////////////////
-
-
-
-////////////////////////////////////////////////////////////////
-//Scoop Thread START
-
-#include <SCoop.h>
-
-defineTask(TaskTest1);//创建子线程1
-defineTask(TaskTest2);//创建子线程2
-
-void TaskTest1::setup()//线程1设定
-{}
-
-void TaskTest1::loop()//线程1循环
+void drawMenu()
 {
-  //获取传感器数据  温度
-  getSensorData();
-
-  //LED屏 显示
   u8g.firstPage();
   do {
     draw();
   }
   while (u8g.nextPage());
 }
- 
-void TaskTest2::setup()//线程2设定
-{}
-void TaskTest2::loop()//线程2循环
+
+//LED END
+/////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////
+//Metro Thread START
+
+
+#include <Metro.h> 
+
+boolean blink1State = false;   //定义 blink1State 为false状态
+boolean blink2State = false;   //定义 blink2State 为false状态  
+
+Metro blink1Metro = Metro(1000 * 10);   //把 blink1Metro 实例化 Metro 对象 ，并设置间隔时间
+Metro blink2Metro = Metro(1000 * 30);     //把 blink2Metro 实例化 Metro 对象 ，并设置间隔时间
+
+void MetroThread()
 {
-  //wifi
-  wifiSendDataToServer();
+   if(blink1Metro.check()){  //检查blink1Metro间隔(我的理解是计时器每隔100毫秒就会返回true，就执行以下程序)
+    blink1State = !blink1State;   //反转blink1State的逻辑真或假（false or true）
+    Serial.print("blink1Metro\r\n");
+    //LED屏 显示
+    drawMenu();
+   }
+ 
+  if(blink2Metro.check()){
+    blink2State = !blink2State;
+    Serial.print("blink2Metro\r\n");
+    //wifi
+    wifiSendDataToServer();
+  }  
 }
 
+//Metro Thread START
+////////////////////////////////////////////////////////////////
 
-//Scoop Thread END
-///////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////
 // the setup routine runs once when you press reset:
@@ -436,12 +464,15 @@ void setup() {
   //初始化I2C
   Wire.begin();
   //delay(100);
-
+  
   //wifi
   wifiInit();
 
-  //
-  mySCoop.start();
+
+  //先显示一遍界面
+  //LED屏 显示
+  drawMenu();
+  
 }
 
 // the setup routine runs once when you press reset:
@@ -454,5 +485,10 @@ void loop() {
   //Serial.print(digitalRead(A0) * 2000);
   //Serial.println();
   //delay(1000);        // delay in between reads for stability
-  yield();
+  
+  //获取传感器数据  温度
+  getSensorData();
+  
+  MetroThread();
+  
 }

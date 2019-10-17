@@ -16,19 +16,26 @@ int main()
 
     server.Post("/", [] (const Request& req, Response& resp) {
                //下位机发送
-               //std::cout << req.version << req.method << req.target << req.body << std::endl;
+               //发送三个数据 mac temperature heartrate   
                std::cout << "Post" << std::endl;
-               //std::cout << req.body << std::endl;
-               std::string html = "Server Recived Successfully\r\n";
+               std::cout << req.body << std::endl;
                //把数据给存储到本地
-               std::vector<std::string> data;
-               StringUtil::Split(req.body, "\r\n", data);
-               
-               for (auto e : data)
+               std::unordered_map<std::string, std::string> body_kv;
+               UrlUtil::ParseBody(req.body, body_kv);
+               std::cout << "body_kv" << std::endl;
+               for (auto e : body_kv)
                {
-                    std::cout << e << std::endl;
+                    std::cout << e.first << e.second << std::endl;
                }
 
+               const std::string mac_s = body_kv["mac"];
+               const std::string temperature_s = body_kv["temperature"];
+               const std::string heartrate_s = body_kv["heartrate"];
+                
+               bool writebool = FileUtil::Write("./tmp_data/" + mac_s + ".info", temperature_s + " " + heartrate_s + "\r\n"); 
+               std::cout << "Write : " << writebool << std::endl;
+
+               std::string html = "Server Recived Successfully\r\n";
                resp.set_content(html, "text/html");
                });
     server.set_base_dir("./template");
