@@ -112,6 +112,18 @@ public:
         file.close();
         return true;
     }
+
+    static bool ADDWrite(const std::string& file_path, const std::string& content)
+    {
+        //std::cout << file_path << std::endl;
+        std::ofstream file(file_path.c_str(), std::ios::app);
+        if (!file.is_open()) {
+            return false;
+        }
+        file.write(content.c_str(), content.size());
+        file.close();
+        return true;
+    }
 };
 
 //字符串如何切分
