@@ -1,4 +1,3 @@
-
 ////////////////////
 //Serial START
 
@@ -17,21 +16,21 @@ unsigned long getTime0() {
   //返回   从按下的时间开始-------到松手的时间
   sta_cache = sta;
   sta = digitalRead(PIN);
-  //Serial.print("sta = ");
-  //Serial.print(sta);
-  //Serial.print("sta_cache = ");
-  //Serial.print(sta_cache);
-  //Serial.println();
+  //   Serial.print("sta = ");
+  // Serial.print(sta);
+  //     Serial.print("sta_cache = ");
+  // Serial.print(sta_cache);
+  //   Serial.println();
   delayMicroseconds(200);
   if (sta == HIGH && sta_cache == LOW) {
     time_cache0 = time0;
     time0 = millis();
-    //Serial.print("本次有效");
+    //     Serial.print("本次有效");
     return (time0 - time_cache0);
   }
   else {
-    //Serial.print("本次无效");
-    //Serial.println();
+    //     Serial.print("本次无效");
+    //   Serial.println();
     return 0;
   }
 }
@@ -47,7 +46,7 @@ unsigned long getTime1(unsigned long _t) {
   if (time1_cache) {  //有数据时才执行滤波
     if (time1_cache < time1_MAX) {   //滤最小阈值
       if (time1_cache < time1_MIN) { //若有过快的波，开启标志位
-        //Serial.println("make");
+        //       Serial.println("make");
         time1_sta_error = true;
       }
       return 0;
@@ -169,11 +168,15 @@ SoftwareSerial mySerial(2, 3); /* RX:D2, TX:D3 */
 #define UARTSPEED  19200
 #endif
 
-#define SSID_NAME   "SSID"
-#define PASSWORD    "PASSWORD"
+#define SSID_NAME   "刮开密码▇▇▇▇▇▇"
+#define PASSWORD    "WASD315.??"
 
-#define HOST_NAME   "www.baidu.com"
-#define HOST_PORT   (80)
+//#define HOST_NAME   "119.23.248.167"
+//#define HOST_PORT   (9527)
+
+#define HOST_NAME   "192.168.1.100"
+#define HOST_PORT   (9527)
+
 
 ESP8266 wifi(&EspSerial);
 bool connectflag = false; 
@@ -196,7 +199,6 @@ void wifiInit()
   else {
     Serial.print("Join AP failure\r\n");
   }
-  
   if (wifi.disableMUX()) {
       Serial.print("single ok\r\n");
   } else {
@@ -209,7 +211,6 @@ void wifiSendDataToServer()
 {
 
   Serial.print("wifiSendDataToServer\r\n");
-
   //如果没有连着wifi 重新连一下
   if (!connectflag)
   {
@@ -222,7 +223,6 @@ void wifiSendDataToServer()
       Serial.print("Join AP failure\r\n");
       return;
     }
-
     if (wifi.disableMUX()) {
       Serial.print("single ok\r\n");
     } else {
@@ -230,11 +230,7 @@ void wifiSendDataToServer()
       return;
     }
   }
-
-
-  
-  uint8_t buffer[1024] = {0};
-
+ 
   if (wifi.createTCP(HOST_NAME, HOST_PORT)) {
     Serial.print("create tcp ok\r\n");
   } else {
@@ -242,19 +238,52 @@ void wifiSendDataToServer()
     return;
   }
 
-  char *hello = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\nConnection: close\r\n\r\n";
-  wifi.send((const uint8_t*)hello, strlen(hello));
+  // Trying 119.23.248.167...
+  // TCP_NODELAY set 
+  // Connected to 119.23.248.167 (119.23.248.167) port 9527 (#0)
+  // GET /all_questions HTTP/1.1
+  // Host: 119.23.248.167:9527
+  // User-Agent: curl/7.64.1
+  // Accept: */* 
+  //
+  //temperature
+  //heartrate
+  //char senddata[] = "POST / HTTP/1.1\r\nHost: 119.23.248.167:9527\r\nAccept: */*\r\n\r\n aaa";
+  //char *hello = "GET / HTTP/1.1\r\nHost: 119.23.248.167\r\nConnection: close\r\nAccept: */*\r\n\r\n";
+  String senddata = "POST / HTTP/1.1\r\nHost: 119.23.248.167:9527\r\nAccept: */*\r\n\r\n";
 
-  //uint32_t len = wifi.recv(buffer, sizeof(buffer), 10000);
-  /*
-   if (len > 0) {
-    Serial.print("Received:[");
+
+  //AT+CIPSTAMAC? +CIPSTAMAC:"60:01:94:20:18:57"
+  String macaddr = wifi.getStationMac();
+  int startpos = macaddr.indexOf('"');
+  
+  senddata += "mac:";
+  senddata += macaddr.substring(startpos + 1, startpos + 18);
+  senddata += "\r\n";
+  
+  senddata += "temperature:";
+  senddata += temperature;
+  senddata += "\r\n";
+  
+  senddata += "heartrate:";
+  senddata += heartrate; 
+  senddata += "\r\n";
+  
+  Serial.print("Send:[\r\n");
+  Serial.print(senddata.c_str());
+  Serial.print("]\r\n");
+  wifi.send((const uint8_t*)senddata.c_str(), senddata.length());
+
+
+  uint8_t buffer[1024] = {0};
+  uint32_t len = wifi.recv(buffer, sizeof(buffer), 10000);
+  if (len > 0) {
+    Serial.print("Received:[\r\n");
     for (uint32_t i = 0; i < len; i++) {
       Serial.print((char)buffer[i]);
     }
     Serial.print("]\r\n");
   }
-  */
   
   if (wifi.releaseTCP()) {
     Serial.print("release tcp ok\r\n");
@@ -400,7 +429,7 @@ boolean blink1State = false;   //定义 blink1State 为false状态
 boolean blink2State = false;   //定义 blink2State 为false状态  
 
 Metro blink1Metro = Metro(1000 * 10);   //把 blink1Metro 实例化 Metro 对象 ，并设置间隔时间
-Metro blink2Metro = Metro(1000 * 60);     //把 blink2Metro 实例化 Metro 对象 ，并设置间隔时间
+Metro blink2Metro = Metro(1000 * 30);     //把 blink2Metro 实例化 Metro 对象 ，并设置间隔时间
 
 void MetroThread()
 {
