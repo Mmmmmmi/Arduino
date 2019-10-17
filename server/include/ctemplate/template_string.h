@@ -50,7 +50,7 @@
 class TemplateStringTest;          // needed for friendship declaration
 class StaticTemplateStringTest;
 
-#if 1
+#if 0
 extern char _start[] __attribute__((weak));     // linker emits: start of .text
 extern char data_start[] __attribute__((weak));               // start of .data
 #endif
