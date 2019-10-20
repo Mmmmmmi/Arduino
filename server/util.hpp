@@ -81,6 +81,18 @@ inline std::ostream& log(Level level, const std::string& msg, const std::string&
 class FileUtil
 {
 public:
+
+    static bool CheckFile(const std::string& file_path)
+    {
+        std::ifstream file(file_path.c_str(), std::ios::in);
+        if (!file.is_open())
+        {
+            return false;
+        }
+        return true;
+    }
+
+
     //传入一个文件路径， 帮我们把文件中的所有内容都读取出来放到content中
     static bool Read(const std::string& file_path, std::string& content)
     {
