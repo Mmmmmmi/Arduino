@@ -116,7 +116,7 @@ void getSensorData()
     if (islegal) {
       if (retpulse) {
       heartrate = retpulse;
-      Serial.print("心率值：");
+      Serial.print("Current heartrate：");
       Serial.println(heartrate);
       }
     }
@@ -131,7 +131,7 @@ void getSensorData()
   if (timeflag >= 10000) {
     nowtime = millis();
     temperature = sensor.temp();
-    Serial.print("Current temp: ");
+    Serial.print("Current temperature: ");
     Serial.print(temperature);
     Serial.println(" C");
   }
@@ -171,12 +171,14 @@ SoftwareSerial mySerial(2, 3); /* RX:D2, TX:D3 */
 #define SSID_NAME   "刮开密码▇▇▇▇▇▇"
 #define PASSWORD    "WASD315.??"
 
+//#define SSID_NAME   "Mmmmmmi"
+//#define PASSWORD    "PPNN13%dkstfeb.1st"
 
 //#define HOST_NAME   "119.23.248.167"
 //#define HOST_PORT   (9527)
 
 #define HOST_NAME   "192.168.1.100"
-#define HOST_PORT   (9527)
+#define HOST_PORT   9527
 
 
 ESP8266 wifi(&EspSerial);
@@ -251,7 +253,11 @@ void wifiSendDataToServer()
   //heartrate
   //char senddata[] = "POST / HTTP/1.1\r\nHost: 119.23.248.167:9527\r\nAccept: */*\r\n\r\n aaa";
   //char *hello = "GET / HTTP/1.1\r\nHost: 119.23.248.167\r\nConnection: close\r\nAccept: */*\r\n\r\n";
-  String senddata = "POST / HTTP/1.1\r\nHost: 119.23.248.167:9527\r\nAccept: */*\r\n\r\n";
+  String senddata = "POST / HTTP/1.1\r\nHost: ";
+  senddata += HOST_NAME;    //IP
+  senddata += ":";
+  senddata += 9527;         //port
+  senddata += "\r\nAccept: */*\r\n\r\n";
 
 
   //AT+CIPSTAMAC? +CIPSTAMAC:"60:01:94:20:18:57"
