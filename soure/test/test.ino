@@ -1,14 +1,10 @@
 ////////////////////
 //Serial START
 
+/////////////////////////
+//heartrate START
 
-#define PIN A0
-#include <Wire.h>
-#include <LM75.h>
-
-LM75 sensor(LM75_ADDRESS | 0b000);
-
-//////////////////////  心率
+#define PIN A0  // 心率模块使用的端口
 unsigned long time0;
 unsigned long time_cache0;
 bool sta = false, sta_cache = true;
@@ -99,14 +95,10 @@ unsigned long pulse(unsigned long _t) {       //_t 表示按压时间
   }
 }
 
-
-
-int temperature = 0, heartrate = 0;     //温度  心率
-////获取传感器数据
-void getSensorData()
+int heartrate = 0;
+void getheartrate()
 {
-
-  //////////////////
+    //////////////////
   //心率
   long presstime = getTime0();   //按压时间
   long islegal = getTime1(presstime); //检测有效性    有效返回按压时间 无效返回0
@@ -121,20 +113,51 @@ void getSensorData()
       }
     }
   }
+}
 
+//heartrate END
+///////////////////////////////////
+
+
+///////////////////////////////////
+//temperature START
+
+#include <Microduino_Tem_Hum.h>
+Tem_D1  termo;  //调用Sensor-Temperature-D1传感器
+
+int temperature = 0;
+void gettemperature()
+{
   ///////////////////
   //温度
   //时间控制 10秒左右测一次   
   static int timeflag = 0;
   static int nowtime = 0;
   timeflag = millis() - nowtime;  
+  if (!termo.begin())
+  {
+    //串口打印传感器不在线
+    Serial.println("Termo bad");
+  }
   if (timeflag >= 10000) {
     nowtime = millis();
-    temperature = sensor.temp();
+    temperature = termo.getTemperature();
     Serial.print("Current temperature: ");
     Serial.print(temperature);
     Serial.println(" C");
   }
+}
+
+//temperature END
+//////////////////////////////////
+
+//温度  心率
+////获取传感器数据
+void getSensorData()
+{
+
+  getheartrate();   //获取心率
+  gettemperature(); //获得温度
 
 }
 
@@ -463,12 +486,11 @@ void MetroThread()
 // the setup routine runs once when you press reset:
 void setup() {
   // initialize serial communication at 9600 bits per second:
-
+  Serial.begin(115200); //
   // serial
-  pinMode(A0, INPUT);
-  Serial.begin(115200);  
-  //初始化I2C
-  Wire.begin();
+  pinMode(A0, INPUT);   //心率模块
+
+  termo.begin();    //温度模块 
   //delay(100);
   
   //wifi
