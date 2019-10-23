@@ -56,7 +56,10 @@ int main()
                 const std::string mac_s = data[0].substr(data[0].find(":") + 1);
                 const std::string temperature_s = data[1].substr(data[1].find(":")  + 1);
                 const std::string heartrate_s = data[2].substr(data[2].find(":") + 1);
-                std::cout << mac_s << std::endl << temperature_s << std::endl << heartrate_s << std::endl;
+                const std::string weight_s = data[3].substr(data[3].find(":") + 1);
+                const std::string alcohol_s = data[4].substr(data[4].find(":") + 1);
+                const std::string time_s = data[5].substr(data[5].find(":") + 1);
+                std::cout << "mac:" << mac_s << std::endl << "temperature:" << temperature_s << std::endl << "heartrate:" << heartrate_s << std::endl << "weight:" << weight_s << std::endl << "alcohol:" << alcohol_s << std::endl << "time:" << time_s << std::endl;;
 
                 std::string all_infopath = "./tmp_data/mac_addr_info.txt"; //将 mac 地址存入
                 std::string infopath = "./tmp_data/" + mac_s + ".info"; //写具体数据

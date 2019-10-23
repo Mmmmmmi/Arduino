@@ -1,8 +1,25 @@
-////////////////////
+/////////////////////////////////////////////////////////////////
+//扩展模块分布
+//NC//SCL          PIN4
+//数字信号输入/SDA   PIN3
+//VCC              PIN2
+//GND              PIN1
+
+//A1              PIN4
+//A0              PIN3
+//VCC             PIN2
+//GND             PIN1
+
+
+//
+/////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////
 //Serial START
 
 /////////////////////////
-//heartrate START
+//Heartrate START
 
 #define PIN A0  // 心率模块使用的端口
 unsigned long time0;
@@ -115,12 +132,12 @@ void getheartrate()
   }
 }
 
-//heartrate END
+//Heartrate END
 ///////////////////////////////////
 
 
 ///////////////////////////////////
-//temperature START
+//Temperature START
 
 #include <Microduino_Tem_Hum.h>
 Tem_D1  termo;  //调用Sensor-Temperature-D1传感器
@@ -131,38 +148,105 @@ void gettemperature()
   ///////////////////
   //温度
   //时间控制 10秒左右测一次   
-  static int timeflag = 0;
-  static int nowtime = 0;
-  timeflag = millis() - nowtime;  
+  //static float timeflag = 0;
+  //static float nowtime = 0;
+  //timeflag = millis() - nowtime;  
   if (!termo.begin())
   {
     //串口打印传感器不在线
     Serial.println("Termo bad");
   }
-  if (timeflag >= 10000) {
-    nowtime = millis();
+  //if (timeflag >= 10000) {
+    //nowtime = millis();
     temperature = termo.getTemperature();
     Serial.print("Current temperature: ");
     Serial.print(temperature);
     Serial.println(" C");
+  //}
+}
+
+//Temperature END
+//////////////////////////////////
+
+
+//////////////////////////////////
+//Weight START
+
+// Hx711.DOUT - pin #A1
+// Hx711.SCK - pin #A0
+
+#include <Hx711.h>
+
+//Hx711 scale(A1, A0);
+Hx711 scale(A7, A6);
+
+int weight = 0;
+void getweight()
+{
+
+  ///////////////////
+  //体重
+  //时间控制 10秒左右测一次   
+  //static float timeflag = 0;
+  //static float nowtime = 0;
+  //timeflag = millis() - nowtime;  
+  //if (timeflag >= 10000) {
+    //nowtime = millis();
+    weight = scale.getGram();
+    Serial.print("Current weight: ");
+    Serial.print(weight);
+    Serial.println(" g");
+  //}
+}
+
+//Weight END
+//////////////////////////////////
+
+//////////////////////////////////
+//gas Sensor MQ-3 START
+
+int gas_din=2;
+int gas_ain=A2;
+int alcohol;
+
+void getalcohol()
+{
+  alcohol = analogRead(gas_ain);
+  if(digitalRead(gas_din)==LOW)
+  {
+    Serial.println("Gas leakage：");
+    Serial.println(alcohol);
+  }
+  else
+  {
+    Serial.println("Gas not leak");
   }
 }
 
-//temperature END
+
+//gas Sensor MQ-3 START
 //////////////////////////////////
 
-//温度  心率
+
+/////////////////////////////////
+//ALL START
 ////获取传感器数据
 void getSensorData()
 {
 
   getheartrate();   //获取心率
   gettemperature(); //获得温度
+  getweight();      //获取体重
+  getalcohol();     //获取酒精浓度
+  gettime();        //获取时间
 
 }
+//ALL END
+/////////////////////////////////
 
 //Serial END
 /////////////////////////////////////////////////////////////////
+
 
 
 
@@ -191,11 +275,9 @@ SoftwareSerial mySerial(2, 3); /* RX:D2, TX:D3 */
 #define UARTSPEED  19200
 #endif
 
-#define SSID_NAME   "刮开密码▇▇▇▇▇▇"
+#define SSID_NAME   "CPrimer"
 #define PASSWORD    "WASD315.??"
 
-//#define SSID_NAME   "Mmmmmmi"
-//#define PASSWORD    "PPNN13%dkstfeb.1st"
 
 //#define HOST_NAME   "119.23.248.167"
 //#define HOST_PORT   (9527)
@@ -226,12 +308,159 @@ void wifiInit()
     Serial.print("Join AP failure\r\n");
   }
   if (wifi.disableMUX()) {
-      Serial.print("single ok\r\n");
+      Serial.print("signal ok\r\n");
   } else {
-    Serial.print("single err\r\n");
+    Serial.print("signal ok\r\n");
   }
   Serial.print("setup end\r\n");
 }
+
+
+/////////////////////////
+//Time START
+
+
+#define TIME_HOST_NAME   "pool.ntp.org"
+#define TIME_HOST_PORT   (123)
+#define TIME_ZONE +8
+/*==============================================================================*/
+/* Useful Constants */
+#define SECS_PER_HOUR (3600UL)
+
+#include <TimeLib.h>
+
+uint8_t buffer[128] = {0};
+uint32_t len = 0;
+int Year, Month, Day, Hour, Minute, Second, Weekday;
+time_t prevDisplay = 0;
+
+void updateTimeData() {
+  do {
+    delay(200);
+    registerUDPAndSendRecvData();
+    if (len > 0) {
+      getTimeStampAndSetRTC();
+      unregisterUDP();
+    } else {
+      unregisterUDP();
+    }
+  } while (!len);
+}
+
+void getTimeStampAndSetRTC() {
+  Serial.print("Received:[");
+  unsigned long t = (((unsigned long)buffer[40] << 24) |
+                     ((unsigned long)buffer[41] << 16) |
+                     ((unsigned long)buffer[42] <<  8) |
+                     (unsigned long)buffer[43]) - 2208988800UL;
+
+  Serial.print("Unix timestamp:");
+  Serial.print(t);
+  Serial.print("]\r\n");
+
+  setTime(t);
+  adjustTime(TIME_ZONE * SECS_PER_HOUR);
+}
+
+void registerUDPAndSendRecvData() {
+  if (wifi.registerUDP(TIME_HOST_NAME, TIME_HOST_PORT)) {
+    Serial.print("register udp ");
+    Serial.println(" ok");
+  } else {
+    Serial.print("register udp ");
+    Serial.println(" err");
+  }
+
+  static const char PROGMEM
+  timeReqA[] = { 227,  0,  6, 236 }, timeReqB[] = {  49, 78, 49,  52 };
+  // Assemble and issue request packet
+  uint8_t       buf[48];
+  memset(buf, 0, sizeof(buf));
+  memcpy_P( buf    , timeReqA, sizeof(timeReqA));
+  memcpy_P(&buf[12], timeReqB, sizeof(timeReqB));
+
+  wifi.send((const uint8_t*)buf, 48);
+  //uint32_t len = wifi.recv(upd_id, buffer, sizeof(buffer), 10000);
+  len = wifi.recv(buffer, sizeof(buffer), 10000);
+}
+void unregisterUDP() {
+  if (wifi.unregisterUDP()) {
+    Serial.print("unregister udp ");
+    Serial.println(" ok");
+  } else {
+    Serial.print("unregister udp ");
+    Serial.println(" err");
+  }
+}
+
+String currenttime;
+//*****串口打印日期时间*****
+void serialClockDisplay(int _year, int _month, int _day, int _hour, int _minute, int _second) {
+  currenttime = "";
+  if (_year < 1000) {
+    currenttime += "20";
+    Serial.print("20");
+  }
+  currenttime += _year;
+  Serial.print(_year, DEC);
+  currenttime += "-";
+  Serial.print('/');
+  if (_month < 10) {
+    currenttime += "0";
+    Serial.print("0");
+  }
+  currenttime += _month;
+  Serial.print(_month, DEC);
+  currenttime += "-";
+  Serial.print('/');
+  if (_day < 10) {
+    currenttime += "0";
+    Serial.print("0");
+  }
+  currenttime += _day;
+  Serial.print(_day, DEC);
+  currenttime += "-";
+  Serial.print("   ");
+  currenttime += _hour;
+  Serial.print(_hour, DEC);
+  currenttime += "-";
+  Serial.print(':');
+  if (_minute < 10) {
+    currenttime += "0";
+    Serial.print("0");
+  }
+  currenttime += _minute;
+  Serial.print(_minute, DEC);
+  currenttime += "-";
+  Serial.print(':');
+  if (_second < 10) {
+    currenttime += "0";
+    Serial.print("0");
+  }
+  currenttime += _second;
+  Serial.println(_second, DEC);
+  Serial.println();
+}
+
+
+void gettime()
+{
+    if (now() != prevDisplay) {
+    prevDisplay = now();
+    serialClockDisplay(year(), month(), day(), hour(), minute(), second());
+  }
+}
+
+//Time END
+/////////////////////////
+
+
+
+
+
+
+//////////////////////////
+//Send Data START
 
 void wifiSendDataToServer()
 {
@@ -250,13 +479,14 @@ void wifiSendDataToServer()
       return;
     }
     if (wifi.disableMUX()) {
-      Serial.print("single ok\r\n");
+      Serial.print("signal ok\r\n");
     } else {
-      Serial.print("single err\r\n");
+      Serial.print("signal ok\r\n");
       return;
     }
   }
- 
+  
+
   if (wifi.createTCP(HOST_NAME, HOST_PORT)) {
     Serial.print("create tcp ok\r\n");
   } else {
@@ -298,13 +528,26 @@ void wifiSendDataToServer()
   senddata += "heartrate:";
   senddata += heartrate; 
   senddata += "\r\n";
+
+  senddata += "weight:";
+  senddata += weight; 
+  senddata += "\r\n";
+
+  
+  senddata += "alcohol:";
+  senddata += alcohol; 
+  senddata += "\r\n";
+
+  senddata += "time:";
+  senddata += currenttime; 
+  senddata += "\r\n";
   
   Serial.print("Send:[\r\n");
   Serial.print(senddata.c_str());
   Serial.print("]\r\n");
   wifi.send((const uint8_t*)senddata.c_str(), senddata.length());
 
-
+  /*
   uint8_t buffer[1024] = {0};
   uint32_t len = wifi.recv(buffer, sizeof(buffer), 10000);
   if (len > 0) {
@@ -314,7 +557,7 @@ void wifiSendDataToServer()
     }
     Serial.print("]\r\n");
   }
-  
+  */
   if (wifi.releaseTCP()) {
     Serial.print("release tcp ok\r\n");
   } else {
@@ -322,6 +565,13 @@ void wifiSendDataToServer()
     return;
   }
 }
+
+//Send Data END
+//////////////////////////
+
+
+
+
 
 //WIFI END
 /////////////////////////////////////////////////////////////////
@@ -407,22 +657,37 @@ void draw(void)
   u8g.drawLine(0, 63, 128, 63);
   u8g.drawLine(0, 63, 128, 63);
   
-  u8g.drawStr(0, 25, "TEM:");    //(x, y)   //横 纵
+  u8g.drawStr(0, 25, "TEM:");    //(x, y)   //横 纵   //温度
   u8g.setPrintPos(25, 25);//换行显示须再定义
   u8g.print(temperature, DEC);
   u8g.drawStr(47, 25, "CEL");
   
-  //u8g.drawLine(0, 63, 128, 63);
+  //u8g.drawLine(0, 63, 128, 63);                    
   //u8g.setPrintPos(25, 40);//换行显示须再定义
   
-  u8g.drawStr(0, 35, "HEAT:");
+  u8g.drawStr(0, 35, "HEAT:");                        //心率
   u8g.setPrintPos(33, 35);//换行显示须再定义
   u8g.print(heartrate, DEC);
   u8g.drawStr(50, 35, "/MIN");
 
-  u8g.drawStr(0, 45, "SSID:");
+  
+  //u8g.drawStr(0, 45, "SSID:");                      //wifi 名
   //u8g.setPrintPos(33, 45);//换行显示须再定义
-  u8g.drawStr(33, 45, SSID_NAME);
+  //u8g.drawStr(33, 45, SSID_NAME);
+
+  
+  u8g.drawStr(0, 45, "WEIGHT:");                        //体重
+  u8g.setPrintPos(42, 45);//换行显示须再定义
+  u8g.print(weight, DEC);
+  u8g.drawStr(68, 45, " g");
+
+
+  u8g.drawStr(0, 55, "ALCOHOL:");                        //体重
+  u8g.setPrintPos(48, 55);//换行显示须再定义
+  u8g.print(alcohol, DEC);
+  //u8g.drawStr(65, 55, "/ml");
+  
+
   
   //================ Graph===================//
 
@@ -458,8 +723,8 @@ void drawMenu()
 boolean blink1State = false;   //定义 blink1State 为false状态
 boolean blink2State = false;   //定义 blink2State 为false状态  
 
-Metro blink1Metro = Metro(1000 * 10);   //把 blink1Metro 实例化 Metro 对象 ，并设置间隔时间
-Metro blink2Metro = Metro(1000 * 30);     //把 blink2Metro 实例化 Metro 对象 ，并设置间隔时间
+Metro blink1Metro = Metro(1000 * 5);   //把 blink1Metro 实例化 Metro 对象 ，并设置间隔时间        //5秒刷新一次屏幕
+Metro blink2Metro = Metro(1000 * 30);     //把 blink2Metro 实例化 Metro 对象 ，并设置间隔时间     //30秒发送一次数据
 
 void MetroThread()
 {
@@ -492,6 +757,10 @@ void setup() {
 
   termo.begin();    //温度模块 
   //delay(100);
+
+  pinMode(gas_din,INPUT);       //酒精模块
+  pinMode(gas_ain,INPUT);       //酒精模块
+
   
   //wifi
   wifiInit();
@@ -500,7 +769,8 @@ void setup() {
   //先显示一遍界面
   //LED屏 显示
   drawMenu();
-  
+
+  updateTimeData();   //更新时间
 }
 
 // the setup routine runs once when you press reset:
