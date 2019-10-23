@@ -33,8 +33,8 @@ int main()
                    ctemplate::TemplateDictionary* table_dict = dict.AddSectionDictionary("all_info");
                    std::vector<std::string> tmp;
                    StringUtil::Split(line, "\t" , tmp);
-                   assert(tmp.size() == 2);
-                   //std::cout << tmp.size() << std::endl;
+                   //assert(tmp.size() == 5);
+                   std::cout << tmp.size() << std::endl;
                    //std::cout << tmp[0] << std::endl << tmp[1] << std::endl;
                    table_dict->SetValue("temperature", tmp[0]);
                    table_dict->SetValue("heartrate", tmp[1]);
@@ -68,7 +68,8 @@ int main()
                     FileUtil::ADDWrite(all_infopath, mac_s + "\n");
                     std::cout << "New Mac Add" << std::endl; 
                 }
-                FileUtil::ADDWrite(infopath, temperature_s + "\t" + heartrate_s + "\n");
+
+                FileUtil::ADDWrite(infopath, temperature_s + "\t" + heartrate_s + "\t" + weight_s + "\t" + alcohol_s + "\t" + time_s + "\n");
 
 
                 std::string html = "Server Recived Successfully\r\n";
