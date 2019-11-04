@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "include/ctemplate/template.h"
 #include "include/json/json.h"
 #include "include/httplib.h"
@@ -7,7 +9,6 @@ int main()
     using namespace httplib;
     Server server;
     server.Get("/all_info", [] (const Request& req, Response& resp) {
-
                //浏览器打开
                //std::cout << req.method << "  " << req.version << "  " << req.target << req.body << std::endl;
                //std::cout << req.body << std::endl;
@@ -18,7 +19,6 @@ int main()
                std::string all_infopath = "./tmp_data/mac_addr_info.txt"; //mac 地址信息
                std::ifstream all_infofile(all_infopath);
                std::string macaddr;
-               std::getline(all_infofile, macaddr);
                while(std::getline(all_infofile, macaddr))
                {
 
@@ -28,16 +28,26 @@ int main()
                ctemplate::TemplateDictionary dict("all_info");
                std::string line;
                std::vector<std::pair<std::string, std::string>> all_info;
+               int tabseq = 0;
                while(std::getline(file, line))
                {
                    ctemplate::TemplateDictionary* table_dict = dict.AddSectionDictionary("all_info");
                    std::vector<std::string> tmp;
                    StringUtil::Split(line, "\t" , tmp);
-                   //assert(tmp.size() == 5);
-                   std::cout << tmp.size() << std::endl;
+                   assert(tmp.size() == 5);
+                   for (auto e : tmp)
+                   {
+                       std::cout << e << "  ";
+                   }
+                   std::cout << std::endl;
+                   //std::cout << tmp.size() << std::endl;
                    //std::cout << tmp[0] << std::endl << tmp[1] << std::endl;
+                   table_dict->SetValue("seq", std::to_string(++tabseq));
                    table_dict->SetValue("temperature", tmp[0]);
                    table_dict->SetValue("heartrate", tmp[1]);
+                   table_dict->SetValue("weight", tmp[2]);
+                   table_dict->SetValue("alcohol", tmp[3]);
+                   table_dict->SetValue("time", tmp[4]);
                }
                std::string html;
                ctemplate::Template* tpl;
@@ -65,8 +75,8 @@ int main()
                 std::string infopath = "./tmp_data/" + mac_s + ".info"; //写具体数据
                 if (!FileUtil::CheckFile(infopath))
                 {
-                    FileUtil::ADDWrite(all_infopath, mac_s + "\n");
-                    std::cout << "New Mac Add" << std::endl; 
+                FileUtil::ADDWrite(all_infopath, mac_s + "\n");
+                std::cout << "New Mac Add" << std::endl; 
                 }
 
                 FileUtil::ADDWrite(infopath, temperature_s + "\t" + heartrate_s + "\t" + weight_s + "\t" + alcohol_s + "\t" + time_s + "\n");
@@ -74,7 +84,7 @@ int main()
 
                 std::string html = "Server Recived Successfully\r\n";
                 resp.set_content(html, "text/html");
-                });
+    });
     server.set_base_dir("./template");
     server.listen("0.0.0.0", 9527);
     return 0;
