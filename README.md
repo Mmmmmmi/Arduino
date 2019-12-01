@@ -7,8 +7,8 @@
     - `tmp_data` 测量数据保存页面
     - `server.cc` 服务端代码
     - `util.hpp` 工具模块
-- `soure` 下位机目录
-    - `test/test.ino` 下位机代码
+- `source` 下位机目录
+    - `source.ino` 下位机代码
 ## **Server运行环境**
 ### Linux
 ### GCC 4.9+
