@@ -1,5 +1,5 @@
-# **基于C++实现的简易在线oj**
-## **运行环境**
+# **Arduino**
+## **Server运行环境**
 ### Linux
 ### GCC 4.9+
 - Centos下gcc升级方法
@@ -41,8 +41,8 @@ gcc --version
 - 源码已下载至lib中，可自行编译安装，httplib只需要头文件即可，项目中已包含可不必下载。其他库已链接静态库
 
 ## **服务端运行**
-   `./oj_server`
+   `./server`
 ## **查看端口状态**
-   `netstat -anp | grep 9092`
+   `netstat -anp | grep 9527`
 ## **客户端运行**
-   `ip地址:9092/all_questions`
+   `ip地址:9527/all_info`
