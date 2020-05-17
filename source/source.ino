@@ -275,14 +275,10 @@ SoftwareSerial mySerial(2, 3); /* RX:D2, TX:D3 */
 #define UARTSPEED  19200
 #endif
 
-#define SSID_NAME   "CPrimer"
-#define PASSWORD    "WASD315.??"
+#define SSID_NAME   "xxx"
+#define PASSWORD    "xxx"
 
-
-//#define HOST_NAME   "119.23.248.167"
-//#define HOST_PORT   (9527)
-
-#define HOST_NAME   "192.168.1.100"
+#define HOST_NAME   "127.0.0.1"
 #define HOST_PORT   9527
 
 
